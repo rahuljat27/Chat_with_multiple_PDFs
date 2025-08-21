@@ -3,7 +3,7 @@ import streamlit as st
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader
 from langchain.text_splitter import CharacterTextSplitter
-from langchain.embeddings import HuggingFaceInstructEmbeddings
+from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import Chroma
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
@@ -41,15 +41,14 @@ def get_text_chunks(text):
 # Vectorstore with Chroma
 # ----------------------------
 def get_vectorstore(text_chunks):
-    # Fix for memory error: explicitly set the device to 'cpu'
-    hf_embeddings = HuggingFaceInstructEmbeddings(
-        model_name="hkunlp/instructor-xl",
-        model_kwargs={'device': 'cpu'}
+    # Fixed: Switched to a smaller model suitable for cloud deployment
+    embeddings = HuggingFaceEmbeddings(
+        model_name="all-MiniLM-L6-v2"
     )
 
     vectorstore = Chroma.from_texts(
         texts=text_chunks,
-        embedding=hf_embeddings,
+        embedding=embeddings,
         persist_directory=None  # in-memory
     )
     return vectorstore

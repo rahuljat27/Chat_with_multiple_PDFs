@@ -18,43 +18,6 @@
 
 ***
 
-### 🧱 Architecture Overview
-
-The system processes user queries by first retrieving relevant information from the uploaded documents and then using that context to generate a response with the LLM.
-***
-medicare.ai/
-│
-├── data/                          # Raw data files
-│   └── doctor_availability.csv
-│
-├── notebook/                      # Exploratory notebooks
-│   └── availability.csv
-│
-├── data_models/                   # Pydantic models and DB logic
-│   ├── __init__.py
-│   └── models.py
-│
-├── prompt_library/               # Prompt templates and logic
-│   ├── __init__.py
-│   └── prompt.py
-│
-├── toolkit/                      # Helper functions and tools
-│   ├── __init__.py
-│   └── toolkits.py
-│
-├── utils/
-│   ├── __init__.py
-│   └── llms.py                   # Groq + LLaMA LLM integration
-│
-├── agent.py                      # Agent definitions using LangGraph
-├── main.py                       # Main entrypoint to build the graph
-├── streamlit_ui.py               # Streamlit front-end
-├── setup.py                      # Package setup
-├── requirements.txt              # Dependencies
-├── LICENSE
-└── README.md                     # You are here!
-'''
-***
 
 ### ⚙️ Setup Instructions
 

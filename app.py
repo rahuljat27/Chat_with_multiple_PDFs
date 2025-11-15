@@ -5,7 +5,7 @@ sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 import os
 import streamlit as st
 from dotenv import load_dotenv
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 from langchain_text_splitters import CharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
@@ -22,10 +22,17 @@ from langchain_groq import ChatGroq
 def get_pdf_text(pdf_docs):
     text = ""
     for pdf in pdf_docs:
-        pdf_reader = PdfReader(pdf)
-        for page in pdf_reader.pages:
-            if page.extract_text():
-                text += page.extract_text()
+        try:
+            # Streamlit file_uploader returns UploadedFile object
+            # We need to read it properly
+            pdf_reader = PdfReader(pdf)
+            for page in pdf_reader.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text
+        except Exception as e:
+            st.warning(f"Error reading PDF {pdf.name}: {str(e)}")
+            continue
     return text
 
 
@@ -62,11 +69,16 @@ def get_vectorstore(text_chunks):
 # Conversation chain (Groq LLM)
 # ----------------------------
 def get_conversation_chain(vectorstore):
+    # Check if API key exists
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("GROQ_API_KEY not found in environment variables")
+    
     llm = ChatGroq(
-        groq_api_key=os.getenv("GROQ_API_KEY"),
-        model_name="llama3-70b-8192",
+        groq_api_key=api_key,
+        model_name="llama-3.3-70b-versatile",  # Updated to current model name
         temperature=0,
-        max_tokens=512,
+        max_tokens=1024,
     )
 
     retriever = vectorstore.as_retriever()
@@ -104,12 +116,18 @@ def handle_userinput(user_question):
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
     
-    # Get response from chain
-    response = st.session_state.conversation.invoke(user_question)
-    
-    # Add to chat history
-    st.session_state.chat_history.append(("human", user_question))
-    st.session_state.chat_history.append(("ai", response))
+    try:
+        # Get response from chain
+        response = st.session_state.conversation.invoke(user_question)
+        
+        # Add to chat history
+        st.session_state.chat_history.append(("human", user_question))
+        st.session_state.chat_history.append(("ai", response))
+        
+    except Exception as e:
+        st.error(f"Error getting response: {str(e)}")
+        st.info("Please check your GROQ_API_KEY in the .env file or Streamlit secrets")
+        return
     
     # Display chat history
     for i in range(0, len(st.session_state.chat_history), 2):
@@ -151,14 +169,26 @@ def main():
             accept_multiple_files=True,
         )
         if st.button("Process"):
-            with st.spinner("Processing..."):
-                raw_text = get_pdf_text(pdf_docs)
-                text_chunks = get_text_chunks(raw_text)
-                vectorstore = get_vectorstore(text_chunks)
+            if not pdf_docs:
+                st.warning("Please upload at least one PDF file.")
+            else:
+                with st.spinner("Processing..."):
+                    try:
+                        raw_text = get_pdf_text(pdf_docs)
+                        
+                        if not raw_text.strip():
+                            st.error("No text could be extracted from the PDFs. Please make sure the PDFs contain readable text.")
+                            return
+                        
+                        text_chunks = get_text_chunks(raw_text)
+                        vectorstore = get_vectorstore(text_chunks)
 
-                # Create conversation chain
-                st.session_state.conversation = get_conversation_chain(vectorstore)
-                st.success("Documents processed! You can now ask questions.")
+                        # Create conversation chain
+                        st.session_state.conversation = get_conversation_chain(vectorstore)
+                        st.success("Documents processed! You can now ask questions.")
+                    except Exception as e:
+                        st.error(f"Error processing documents: {str(e)}")
+                        st.info("Please make sure you uploaded valid PDF files.")
 
 
 if __name__ == "__main__":

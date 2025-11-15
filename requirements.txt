@@ -1,5 +1,5 @@
 streamlit
-PyPDF2
+pypdf
 python-dotenv
 langchain
 langchain-community

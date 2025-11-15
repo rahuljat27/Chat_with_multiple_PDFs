@@ -9,12 +9,11 @@ from PyPDF2 import PdfReader
 from langchain_text_splitters import CharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain import hub
-from htmlTemplates import css, bot_template, user_template
-from langchain_groq import ChatGroq
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
+from htmlTemplates import css, bot_template, user_template
+from langchain_groq import ChatGroq
 
 
 # ----------------------------
@@ -74,17 +73,17 @@ def get_conversation_chain(vectorstore):
     
     # Simple RAG prompt
     template = """You are an assistant for question-answering tasks. Use the following pieces of context to answer the question. 
-    If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.
-    
-    Context: {context}
-    
-    Question: {question}
-    
-    Answer:"""
+If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.
+
+Context: {context}
+
+Question: {question}
+
+Answer:"""
     
     prompt = ChatPromptTemplate.from_template(template)
     
-    # Create RAG chain
+    # Create RAG chain using LCEL
     def format_docs(docs):
         return "\n\n".join(doc.page_content for doc in docs)
     
